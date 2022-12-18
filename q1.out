@@ -1,0 +1,19 @@
+%group
+formulas(assumptions).
+	x * (y * z) = (x * y) * z.
+	x * I = x.
+	x * inv(x) = I.
+
+	x^u = x.
+	x^(u+1) = x * (x^u).
+
+	x * y = y * x.
+	
+end_of_list.
+
+formulas(goals).
+	x^2 = I.
+	x^3 = I.
+	x^4 = I.
+
+end_of_list.
