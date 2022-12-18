@@ -1,4 +1,4 @@
-from z3 import Bool, BoolVal, Solver, And, Sum, Implies, Or
+from z3 import Bool, BoolVal, Solver, And, Sum, Implies, Or, Not
 import csv
 
 gridFile = "demogrid.csv"
@@ -37,13 +37,19 @@ for row in range(len(grid)):
 
 # TEMPORARY
 startLocations = [startLocations[0]]
-print(startLocations)
 
-solverList = [Solver() for x in range(len(startLocations))]
+solver = Solver()
+
+# the list of goal states that can be reached
+goalLocations = []
+for row in range(len(grid)):
+	for column in range(len(grid[row])):
+		if grid[row][column] == goalSpot:
+			goalLocations.append((row, column))
 
 
 for start in range(len(startLocations)):
-	print(startLocations[start])
+	print("start " + str(startLocations[start]))
 	# this will neeed to be in a loop over all start locations
 	# now make a matrix the shape of the grid
 	robotLocationBegin = [ [ BoolVal((x,y) == startLocations[start]) for y in range(len(grid[x]))] for x in range(len(grid))]
@@ -58,58 +64,60 @@ for start in range(len(startLocations)):
 	movementTypes = [ [Bool(f"type{t}_direction{d}") for d in range(4)] for t in range(typeTotal)]
 
 	# only 1 allowable direction per type
-	solverList[start].add(And([Sum(x) == 1 for x in movementTypes]))
+	solver.add(And([Sum(x) == 1 for x in movementTypes]))
 
 
 	# movement rules
 
 	# the player will only be in one location per turn
 	for turn in robotMovements:
-		solverList[start].add(Sum([Sum(row) for row in turn]) == 1)
+		solver.add(Sum([Sum(row) for row in turn]) == 1)
 
 	# the movement will be in the cardinal directions
-	for t in range(1, len(robotMovements)):
+	for t in range(0, len(robotMovements) - 1):
 		for row in range(len(robotMovements[t])):
 			for column in range(len(robotMovements[row])):
-				# calculate the valid moves based on the cardinal directions
-				# ignoring going over the edge attempts as only maximum moves to reach goal, not minimum
-				# similarly ignoring the lava squares
-				cardinalSurrondings = []
+
+				# the tile type at a particular location
+				typeNum = int(grid[row][column])
+
+				# get valid movement options
+				# so no moving off the edge (since trying will mean eternally attempting to head off edge and thus never reaching goal)
+				# no moving onto the death spots
+				cardinalSurrondings = [(), (), (), ()]
 				if row != 0 and grid[row - 1][column] != deathSpot:
-					cardinalSurrondings.append((row - 1, column))
+					cardinalSurrondings[0] = (row - 1, column)
 				if row != len(grid) - 1 and grid[row + 1][column] != deathSpot:
-					cardinalSurrondings.append((row + 1, column))
+					cardinalSurrondings[2] = (row + 1, column)
 				if column != 0 and grid[row][column - 1] != deathSpot:
-					cardinalSurrondings.append((row, column - 1))
+					cardinalSurrondings[3] = (row, column - 1)
 				if column != len(grid[0]) - 1 and grid[row][column + 1] != deathSpot:
-					cardinalSurrondings.append((row, column + 1))
+					cardinalSurrondings[1] = (row, column + 1)
+
+				# if it is a valid movement option, check which direction the spot you are on wants and do it
+				# if it is an invalid direction, then record that that spot type cannot go in that direction
+				for direction in range(len(cardinalSurrondings)):
+					# if already reached goal state, don't keep moving as that could result in player dying
+					if typeNum == goalSpot:
+						solver.add(Implies(robotMovements[t][row][column], robotMovements[t + 1][row][column]))
+					else:
+						if cardinalSurrondings[direction] != ():
+							solver.add(Implies(robotMovements[t][row][column], 
+								Implies(movementTypes[typeNum][direction], robotMovements[t + 1][cardinalSurrondings[direction][0]][cardinalSurrondings[direction][1]])))
+						else:
+							solver.add(Implies(robotMovements[t][row][column], Not(movementTypes[typeNum][direction])))
 
 
-				# if the player was in a location last turn, it must be within the cardinal directions the next
-				solverList[start].add(Implies(robotMovements[t - 1][row][column], Or([robotMovements[t][coord[0]][coord[1]] for coord in cardinalSurrondings])))
-
-				# the player must also obey the decided movement direction based on tile type
-				# solverList[start].add(Implies(robotMovements[t - 1][row][column], ))
-
-
-
-
-	# for each of these paths, a goal state will be reached
-	goalLocations = []
-	for row in range(len(grid)):
-		for column in range(len(grid[row])):
-			if grid[row][column] == goalSpot:
-				goalLocations.append((row, column))
-
-	solverList[start].add(Or([ Or([turn[x[0]][x[1]] for x in goalLocations]) for turn in robotMovements]))
+	# on any turn, any of the goal states must be reached at least once
+	solver.add(Or([ Or([turn[x[0]][x[1]] for x in goalLocations]) for turn in robotMovements]))
 
 
 
 
 	print("-------")
 	print("On start location " + str(start))
-	print(solverList[start].check())
-	m = solverList[start].model()
+	print(solver.check())
+	m = solver.model()
 
 
 	print("Start: " + str(startLocations[0]))
