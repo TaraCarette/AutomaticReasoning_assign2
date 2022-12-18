@@ -108,7 +108,7 @@ def findPath(startLoc, mTypes, goalList, grid, solver, robotMovements):
 				# 	for direction in range(len(slipCardinalSurrondings)):
 				# 		if slipCardinalSurrondings[direction] != ():
 				# 			pass
-				# 			# findPath()
+				# 			# findPath() uhh, try all and somehow just grab the direction rules?
 				# 			# solver.add(Implies(robotMovements[t][row][column], 
 				# 			# 	Implies(mTypes[typeNum][direction], robotMovements[t + 1][slipCardinalSurrondings[direction][0]][slipCardinalSurrondings[direction][1]])))
 
@@ -119,18 +119,16 @@ def findPath(startLoc, mTypes, goalList, grid, solver, robotMovements):
 				# 		# 	solver.add(Implies(robotMovements[t][row][column], Not(mTypes[typeNum][direction])))
 
 
-				# THIS MUST BE POORLY APPLIED, FIX
-				# # if already reached goal state, don't keep moving as that could result in player dying
-				# if typeNum == int(goalSpot):
-				# 	solver.add(Implies(robotMovements[t][row][column], robotMovements[t + 1][row][column]))
-
-
 				# if it is a valid movement option, check which direction the spot you are on wants and do it
 				# if it is an invalid direction, then record that that spot type cannot go in that direction
 				for direction in range(len(cardinalSurrondings)):
 					if cardinalSurrondings[direction] != ():
-						solver.add(Implies(robotMovements[t][row][column], 
-							Implies(mTypes[typeNum][direction], robotMovements[t + 1][cardinalSurrondings[direction][0]][cardinalSurrondings[direction][1]])))
+						# if already reached goal state, don't keep moving as that could result in player dying
+						if typeNum == int(goalSpot):
+							solver.add(Implies(robotMovements[t][row][column], robotMovements[t + 1][row][column]))
+						else:
+							solver.add(Implies(robotMovements[t][row][column], 
+								Implies(mTypes[typeNum][direction], robotMovements[t + 1][cardinalSurrondings[direction][0]][cardinalSurrondings[direction][1]])))
 					else:
 						solver.add(Implies(robotMovements[t][row][column], Not(mTypes[typeNum][direction])))
 
@@ -162,7 +160,6 @@ for start in range(len(startLocations)):
 	print("On start location " + str(start))
 	print(s.check())
 	m = s.model()
-
 
 	print("Start: " + str(startLocations[start]))
 	goalReached = False
