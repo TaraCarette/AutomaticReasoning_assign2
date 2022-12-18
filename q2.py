@@ -36,7 +36,7 @@ for row in range(len(grid)):
 			startLocations.append((row, column))
 
 # TEMPORARY
-startLocations = [startLocations[0]]
+# startLocations = [startLocations[0]]
 
 solver = Solver()
 
@@ -48,13 +48,18 @@ for row in range(len(grid)):
 			goalLocations.append((row, column))
 
 
+# locations in time for each starting point
+allMovements = [[[[ Bool(f"p{player}_square{x},{y}_turn{t}") for y in range(len(grid[x]))] for x in range(len(grid))] for t in range(X)] for player in range(len(startLocations))]
+
 for start in range(len(startLocations)):
 	print("start " + str(startLocations[start]))
 	# this will neeed to be in a loop over all start locations
 	# now make a matrix the shape of the grid
 	robotLocationBegin = [ [ BoolVal((x,y) == startLocations[start]) for y in range(len(grid[x]))] for x in range(len(grid))]
 
-	robotMovements = [ [ [ Bool(f"square{x},{y}_turn{t}") for y in range(len(grid[x]))] for x in range(len(grid))] for t in range(X)]
+	# use the locations for this particular starting point
+	robotMovements = allMovements[start]
+	# robotMovements = [ [ [ Bool(f"square{x},{y}_turn{t}") for y in range(len(grid[x]))] for x in range(len(grid))] for t in range(X)]
 
 	robotMovements = [robotLocationBegin] + robotMovements
 
@@ -120,7 +125,7 @@ for start in range(len(startLocations)):
 	m = solver.model()
 
 
-	print("Start: " + str(startLocations[0]))
+	print("Start: " + str(startLocations[start]))
 	goalReached = False
 	for t in range(1, len(robotMovements)):
 		if not goalReached:
