@@ -103,15 +103,40 @@ for start in range(len(startLocations)):
 				# if it is an invalid direction, then record that that spot type cannot go in that direction
 				for direction in range(len(cardinalSurrondings)):
 					# if already reached goal state, don't keep moving as that could result in player dying
-					if typeNum == goalSpot:
+					if typeNum == int(goalSpot):
 						solver.add(Implies(robotMovements[t][row][column], robotMovements[t + 1][row][column]))
 					else:
 						if cardinalSurrondings[direction] != ():
-							solver.add(Implies(robotMovements[t][row][column], 
-								Implies(movementTypes[typeNum][direction], robotMovements[t + 1][cardinalSurrondings[direction][0]][cardinalSurrondings[direction][1]])))
+							# ice rules are different, so if moving in valid direction, may move 2
+							if typeNum == int(iceSpot):
+								pass
+								# print("uhhh")
+								# print(cardinalSurrondings)
+								# print(direction)
+
+								# if direction == 0:
+								# 	print("north")
+								# if direction == 1:
+								# 	print("east")
+								# if direction == 2:
+								# 	print("south")
+								# if direction == 3:
+								# 	print("west")
+								# needs to branch
+								# needs to get recursive
+								# so run same system pretty much, over new starting point that is normal cardinal
+								# but also over one where the relavant direction has a step size 2 - which might also cause issues
+								# of going out of range with the rows and columns again - guess calculate the cardinalSurrondings
+								# with ice in mind already?
+								# so move this section up
+								# solver.add(Implies(robotMovements[t][row][column], 
+								# 	Implies(movementTypes[typeNum][direction], robotMovements[t + 1][cardinalSurrondings[direction][0]][cardinalSurrondings[direction][1]])))
+								# quit()
+							else:
+								solver.add(Implies(robotMovements[t][row][column], 
+									Implies(movementTypes[typeNum][direction], robotMovements[t + 1][cardinalSurrondings[direction][0]][cardinalSurrondings[direction][1]])))
 						else:
 							solver.add(Implies(robotMovements[t][row][column], Not(movementTypes[typeNum][direction])))
-
 
 	# on any turn, any of the goal states must be reached at least once
 	solver.add(Or([ Or([turn[x[0]][x[1]] for x in goalLocations]) for turn in robotMovements]))
