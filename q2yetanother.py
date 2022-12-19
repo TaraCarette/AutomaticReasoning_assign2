@@ -1,11 +1,11 @@
 from z3 import Bool, BoolVal, Solver, And, Sum, Implies, Or, Not
 import csv
 
-gridFile = "demogrid.csv"
-# gridFile = "grid1.csv"
+# gridFile = "demogrid.csv"
+gridFile = "grid1.csv"
 # gridFile = "grid2.csv"
 # gridFile = "grid3.csv"
-X = 11
+X = 20
 
 # numbers of meaningful spots
 # other numbers just indicate when types match, nothing else
@@ -201,7 +201,7 @@ for start in range(len(startLocations)):
 
 					if (row, column) in goalLocations:
 						goalReached = True
-						print("goal reached")
+						# print("goal reached")
 
 
 
