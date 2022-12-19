@@ -37,7 +37,8 @@ for row in range(len(myGrid)):
 			startLocations.append((row, column))
 
 # TEMPORARY
-# startLocations = [startLocations[0]]
+# startLocations = [startLocations[0], startLocations[2]]
+# print(startLocations)
 
 # the list of goal states that can be reached
 goalLocations = []
@@ -49,7 +50,7 @@ for row in range(len(myGrid)):
 
 
 
-def findPath(startLoc, mTypes, goalList, grid, solver, robotMovements, player):
+def findPath(mTypes, goalList, grid, solver, robotMovements):
 	# robot is placed for the first turn
 	# afterwards, will they can merge, no more can be created
 	# for turn in robotMovements:
@@ -58,7 +59,6 @@ def findPath(startLoc, mTypes, goalList, grid, solver, robotMovements, player):
 	# for each spot in time, the movement will be guided by the
 	# tile type
 	# avoiding death tiles
-	# avoiding edges
 	for t in range(1, len(robotMovements)):
 		for row in range(len(robotMovements[t])):
 			for column in range(len(robotMovements[row])):
@@ -126,7 +126,7 @@ def findPath(startLoc, mTypes, goalList, grid, solver, robotMovements, player):
 
 						# only if neighbour is ice spot can it come from here
 						if neighborTypeNum == int(iceSpot):
-							possibleMovements.append(And(mTypes[neighborTypeNum][direction], robotMovements[t - 1][slipCardinalSurrondings[direction][0]][cardinalSurrondings[direction][1]]))
+							possibleMovements.append(And(mTypes[neighborTypeNum][direction], robotMovements[t - 1][slipCardinalSurrondings[direction][0]][slipCardinalSurrondings[direction][1]]))
 
 
 				# if last time spot was true and a is goal spot, it stays true
@@ -168,6 +168,15 @@ movementTypes = [ [Bool(f"type{t}_direction{d}") for d in range(4)] for t in ran
 # only 1 allowable direction per type (allow less so can set goal to no direction as should stop moving)
 s.add(And([Sum(x) == 1 for x in movementTypes]))
 
+
+
+# robotLocationBegin = [ [ BoolVal((x,y) in startLocations) for y in range(len(myGrid[x]))] for x in range(len(myGrid))]
+# rMovements = [[[ Bool(f"square{x},{y}_turn{t}") for y in range(len(myGrid[x]))] for x in range(len(myGrid))] for t in range(X)]
+# rMovements = [robotLocationBegin] + rMovements
+
+# s = findPath(movementTypes, goalLocations, myGrid, s, rMovements)
+# print(s.check())
+
 allMovements = [[[[ Bool(f"p{player}_square{x},{y}_turn{t}") for y in range(len(myGrid[x]))] for x in range(len(myGrid))] for t in range(X)] for player in range(len(startLocations))]
 # run through each starting location to the goal location, creating rules as required
 for start in range(len(startLocations)):
@@ -176,7 +185,7 @@ for start in range(len(startLocations)):
 	robotLocationBegin = [ [ BoolVal((x,y) == startLocations[start]) for y in range(len(myGrid[x]))] for x in range(len(myGrid))]
 	rMovements = [robotLocationBegin] + allMovements[start]
 
-	s = findPath(startLocations[start], movementTypes, goalLocations, myGrid, s, rMovements, start)
+	s = findPath(movementTypes, goalLocations, myGrid, s, rMovements)
 	print(s.check())
 
 # print once all the rules have been compiled together
