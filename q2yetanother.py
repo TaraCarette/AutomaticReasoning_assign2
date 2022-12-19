@@ -4,6 +4,7 @@ import csv
 gridFile = "demogrid.csv"
 # gridFile = "grid1.csv"
 # gridFile = "grid2.csv"
+# gridFile = "grid3.csv"
 X = 11
 
 # numbers of meaningful spots
@@ -79,6 +80,20 @@ def findPath(startLoc, mTypes, goalList, grid, solver, robotMovements, player):
 					cardinalSurrondings[3] = (row, column + 1)
 
 
+				slipCardinalSurrondings = [(), (), (), ()]
+				if row > 1:
+					slipCardinalSurrondings[2] = (row - 2, column)
+
+				if row < len(grid) - 2:
+					slipCardinalSurrondings[0] = (row + 2, column)
+
+				if column > 1:
+					slipCardinalSurrondings[1] = (row, column - 2)
+
+				if column < len(grid[0]) - 2:
+					slipCardinalSurrondings[3] = (row, column + 2)
+
+
 				# the tile type at a particular location
 				typeNum = int(grid[row][column])
 
@@ -101,6 +116,17 @@ def findPath(startLoc, mTypes, goalList, grid, solver, robotMovements, player):
 						# direction gets reversed as frame of reference now current square, not neighbor going to current
 						reversedDirection = (direction + 2) % 4
 						possibleMovements.append(And(mTypes[typeNum][reversedDirection], robotMovements[t - 1][row][column]))
+
+
+				for direction in range(len(slipCardinalSurrondings)):
+					# can be true because a neighbour moved in this direction, and
+					#  neighbour not goal (never move off goal state once reached)
+					if slipCardinalSurrondings[direction] != ():
+						neighborTypeNum = int(grid[slipCardinalSurrondings[direction][0]][slipCardinalSurrondings[direction][1]])
+
+						# only if neighbour is ice spot can it come from here
+						if neighborTypeNum == int(iceSpot):
+							possibleMovements.append(And(mTypes[neighborTypeNum][direction], robotMovements[t - 1][slipCardinalSurrondings[direction][0]][cardinalSurrondings[direction][1]]))
 
 
 				# if last time spot was true and a is goal spot, it stays true
@@ -128,10 +154,6 @@ def findPath(startLoc, mTypes, goalList, grid, solver, robotMovements, player):
 			if not (row, column) in goalList:
 				solver.add(Not(robotMovements[-1][row][column]))
 
-
-	# need to make sure cannot disapear, then get rid of this rule
-	# solver.add(Or(robotMovements[-1][goalList[0][0]][goalList[0][1]], robotMovements[-1][goalList[1][0]][goalList[1][1]]))
-	# solver.add(Or([ Or([turn[x[0]][x[1]] for x in goalList]) for turn in robotMovements]))
 
 	return solver
 
