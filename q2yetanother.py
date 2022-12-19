@@ -36,7 +36,7 @@ for row in range(len(myGrid)):
 			startLocations.append((row, column))
 
 # TEMPORARY
-startLocations = [startLocations[1]]
+# startLocations = [startLocations[0]]
 
 # the list of goal states that can be reached
 goalLocations = []
@@ -96,10 +96,6 @@ def findPath(startLoc, mTypes, goalList, grid, solver, robotMovements, player):
 						if neighborTypeNum != int(goalSpot):
 							possibleMovements.append(And(mTypes[neighborTypeNum][direction], robotMovements[t - 1][cardinalSurrondings[direction][0]][cardinalSurrondings[direction][1]]))
 
-					elif typeNum == int(goalSpot):
-						# can also be true because was on goal state las time and should stay there
-						possibleMovements.append(robotMovements[t - 1])
-
 					else:
 						# can be true because it was already here and tried to move on an edge
 						# direction gets reversed as frame of reference now current square, not neighbor going to current
@@ -107,11 +103,16 @@ def findPath(startLoc, mTypes, goalList, grid, solver, robotMovements, player):
 						possibleMovements.append(And(mTypes[typeNum][reversedDirection], robotMovements[t - 1][row][column]))
 
 
+				# if last time spot was true and a is goal spot, it stays true
+				if typeNum == int(goalSpot):
+					# can also be true because was on goal state las time and should stay there
+					possibleMovements.append(robotMovements[t - 1][row][column])
 
 
-				# # if this is a death spot, make sure none of the corresponding possibilities are true
-				# if typeNum == int(deathSpot):
-				# 	solver.add(Not(Or(possibleMovements)))
+
+				# if this is a death spot, make sure none of the corresponding possibilities are true
+				if typeNum == int(deathSpot):
+					solver.add(Not(Or(possibleMovements)))
 
 
 				# this space is true iff on the previous turn there was a robot in the right
