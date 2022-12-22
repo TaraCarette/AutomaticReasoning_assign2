@@ -69,14 +69,13 @@ def getBeingIndexes(name, beingsToCross):
 
 def getNameFromIndex(ind, beingsToCross):
 	counter = 0
+	name = None
 	for b in beingsToCross:
-		if ind <= counter:
-			name = b["name"]
-			break
-
 		counter += b["num"]
 
-	name = beingsToCross[-1]["name"]
+		if ind < counter:
+			name = b["name"]
+			break
 
 	return name
 
@@ -141,13 +140,18 @@ for t in range(1, len(rightSide)):
 		weight = 0
 		for i in range(maxPerBoat):
 			ind = leftSide[t].index(subset[i])
+			name = getNameFromIndex(ind, beingsToCross)
+
 			for b in beingsToCross:
-				if b["name"] == getNameFromIndex(ind, beingsToCross):
+				if b["name"] == name:
 					weight += b["weight"]
 
 		if weight > maxWeightPerBoat:
-			solver.add(Not(And([And(leftSide[t - 1][x], Not(leftSide[t][x])) for x in range(maxPerBoat)])))
+			if t > 1:
+				solver.add(Not(And([And(leftSide[t - 1][leftSide[t].index(subset[x])], Not(leftSide[t][leftSide[t].index(subset[x])])) for x in range(maxPerBoat)])))
 
+			else:
+				solver.add(Not(And([And(leftSide[t - 1][0], Not(x)) for x in subset])))
 
 print(solver.check())
 
@@ -186,19 +190,3 @@ for t in range(1, maxBoatCrossings + 1):
 		print("Crossed!")
 		break
 
-
-
-# # if all beings are on the right side before the final timestep, just stay there
-# solver.add([(Implies(And([x for x in rightSide[t - 1]]), And([x for x in rightSide[t]]))) for t in range(1, len(rightSide))])
-
-# all beings must be on the right side by the end
-# solver.add(And(rightSide[-1]))
-
-
-# # only the max weight of beings switch sides (as boat can only hold that much)
-# possibleBoatCombos = []
-# for t in range(1, len(rightSide)):
-# 	for subset in itertools.combinations(leftSide[t], maxPerBoat):
-# 		ind1 = leftSide[t].index(subset[0])
-# 		ind2 = leftSide[t].index(subset[1])
-# 		possibleBoatCombos.append(And(subset[0] == Not(leftSide[t - 1][ind1]), subset[1] == Not(leftSide[t - 1][ind2])))
