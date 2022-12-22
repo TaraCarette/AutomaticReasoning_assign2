@@ -63,6 +63,18 @@ def getBeingIndexes(name, beingsToCross):
 
 	return requiredIndex
 
+def getNameFromIndex(ind, beingsToCross):
+	counter = 0
+	for b in beingsToCross:
+		if ind <= counter:
+			name = b["name"]
+			break
+
+		counter += b["num"]
+
+	return name
+
+
 # a being can only be one one side of the river at once
 # also must be on at least 1 side
 solver.add(And([Sum(leftSide[t][b], rightSide[t][b]) == 1 for b in range(len(leftSide[t])) for t in range(maxBoatCrossings + 1)]))
@@ -72,6 +84,7 @@ solver.add(And([Sum(leftSide[t][b], rightSide[t][b]) == 1 for b in range(len(lef
 # (as problem is symmetric, will not result in a failure if allowed to keep moving, so can ignore if takes
 # less turns than given to achieve this)
 solver.add(Or([And(rightSide[t]) for t in range(len(rightSide))]))
+
 
 # if a being is required on the boat, it must switch sides every turn
 # get the index of every required being
@@ -113,6 +126,24 @@ for b1 in beingsToCross:
 			solver.add([Implies(boatOnLeft[t], Or(Sum([rightSide[t][b] for b in b1Index]) < Sum([rightSide[t][b] for b in b2Index]), Sum([rightSide[t][b] for b in b2Index]) == 0)) for t in range(maxBoatCrossings + 1)])
 
 
+
+# the beings on the boat must not go over the weight limit
+# so on a side, these combos cannot go from true to false 
+# (aka, getting on boat together) as they are over the weight limit
+for t in range(1, len(rightSide)):
+	for subset in itertools.combinations(leftSide[t], maxPerBoat):
+		weight = 0
+		for i in range(maxPerBoat):
+			ind = leftSide[t].index(subset[i])
+			for b in beingsToCross:
+				if b["name"] == getNameFromIndex(ind, beingsToCross):
+					weight += b["weight"]
+
+		if weight > maxWeightPerBoat:
+			# pass
+			solver.add(Not(And([And(leftSide[t - 1][x], Not(leftSide[t][x])) for x in range(maxPerBoat)])))
+
+
 print(solver.check())
 
 m = solver.model()
@@ -135,14 +166,20 @@ for t in range(1, maxBoatCrossings + 1):
 	else:
 		print("Boat RIGHT")
 	counter = 0
+	crossCounter = 0
 	for being in beingsToCross:
 		for i in range(being["num"]):
 			if m[leftSide[t][counter]]:
 				print(being["name"] + str(i) + " LEFT")
 			if m[rightSide[t][counter]]:
 				print(being["name"] + str(i) + " RIGHT")
+				crossCounter += 1
 
 			counter += 1
+
+	if crossCounter == len(beingsToCross):
+		print("Crossed!")
+		break
 
 
 
