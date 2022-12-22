@@ -1,4 +1,4 @@
-from z3 import Bool, BoolVal, Solver, And, Sum, Or, Not, Implies
+from z3 import Bool, BoolVal, Solver, And, Sum, Or, Not, Implies, If
 import itertools
 
 # river crossing problem
@@ -42,6 +42,10 @@ for t in range(1, maxBoatCrossings):
 		rightSide[t] = rightSide[t] + [Bool(f'{b["name"]}{x}_step{t}_right') for x in range(b["num"])]
 
 
+# over all possible crossings, says if boat on left
+# so false means boat is on the right
+boatOnLeft = [BoolVal(x % 2 == 0) for x in range(maxBoatCrossings)]
+
 # for now, no rules about who can be on the boat together, since for now always with man, switch later
 
 solver = Solver()
@@ -51,8 +55,6 @@ solver = Solver()
 # also must be on at least 1 side
 solver.add(And([Sum(leftSide[t][b], rightSide[t][b]) == 1 for b in range(len(leftSide[t])) for t in range(len(leftSide))]))
 
-# all beings must be on the right side by the end
-solver.add(And(rightSide[-1]))
 
 # there must be a point where everyone is on the right side
 # (as problem is symmetric, will not result in a failure if allowed to keep moving, so can ignore if takes
@@ -71,7 +73,7 @@ for b in beingsToCross:
 	counter += b["num"]
 
 # make sure those beings switch sides
-# solver.add([(And(Implies(leftSide[t - 1][b], rightSide[t][b]), Implies(rightSide[t - 1][b], leftSide[t][b]))) for b in requiredIndex for t in range(1, len(rightSide))])
+solver.add([(And(Implies(leftSide[t - 1][b], rightSide[t][b]), Implies(rightSide[t - 1][b], leftSide[t][b]))) for b in requiredIndex for t in range(1, len(rightSide))])
 
 
 
@@ -107,9 +109,62 @@ for t in range(1, len(rightSide)):
 
 # last time step not being exactly equal to itself implies that
 # one of the following 2 flipped
-solver.add([Implies(Or([leftSide[t][b] != leftSide[t - 1][b] for b in range(beingsTotal)]), Sum(possibleBoatCombos) == 1) for t in range(1, len(leftSide))])
+# solver.add([Implies(Or([leftSide[t][b] != leftSide[t - 1][b] for b in range(beingsTotal)]), Sum(possibleBoatCombos) == 1) for t in range(1, len(leftSide))])
+
+# the side that has the boat for this timestep will have
+# at least the minimum change to false, and no more than the maximum become false
+solver.add([Implies(boatOnLeft[t - 1], Sum([leftSide[t - 1][b] != leftSide[t][b] for b in range(beingsTotal)]) <= maxPerBoat) for t in range(1, maxBoatCrossings)])
+solver.add([Implies(boatOnLeft[t - 1], Sum([leftSide[t - 1][b] != leftSide[t][b] for b in range(beingsTotal)]) >= minPerBoat) for t in range(1, maxBoatCrossings)])
+
+solver.add([Implies(Not(boatOnLeft[t - 1]), Sum([rightSide[t - 1][b] != rightSide[t][b] for b in range(beingsTotal)]) <= maxPerBoat) for t in range(1, maxBoatCrossings)])
+solver.add([Implies(Not(boatOnLeft[t - 1]), Sum([rightSide[t - 1][b] != rightSide[t][b] for b in range(beingsTotal)]) >= minPerBoat) for t in range(1, maxBoatCrossings)])
+
+# [And(Not(leftSide[t - 1][b]), leftSide[t][b]) for b in range(beingsTotal)]
+# if boat not on the side for the timestep, nothing can switch to true
+# solver.add([Not(Implies(boatOnLeft[t], Not(Or([And(Not(leftSide[t - 1][b]), leftSide[t][b]) for b in range(beingsTotal)])))) for t in range(1, maxBoatCrossings)])
+solver.add([Implies(Not(boatOnLeft[t]), Not(Or([And(Not(leftSide[t - 1][b]), leftSide[t][b]) for b in range(beingsTotal)]))) for t in range(1, maxBoatCrossings)])
+solver.add([Implies(boatOnLeft[t], Not(Or([And(Not(rightSide[t - 1][b]), rightSide[t][b]) for b in range(beingsTotal)]))) for t in range(1, maxBoatCrossings)])
+
+
+
 
 print(solver.check())
 
+m = solver.model()
+
+# print initial states
+print("Turn 0")
+print("Boat LEFT")
+counter = 0
+for being in beingsToCross:
+	for i in range(being["num"]):
+		print(being["name"] + str(i) + " LEFT")
+
+
+for t in range(1, maxBoatCrossings):
+	print("--------------------")
+	print("Turn " + str(t))
+
+	if t%2 == 0:
+		print("Boat LEFT")
+	else:
+		print("Boat RIGHT")
+	counter = 0
+	for being in beingsToCross:
+		for i in range(being["num"]):
+			if m[leftSide[t][counter]]:
+				print(being["name"] + str(i) + " LEFT")
+			elif m[rightSide[t][counter]]:
+				print(being["name"] + str(i) + " RIGHT")
+			else:
+				print("problem")
+
+			counter += 1
+
+
+
 # # if all beings are on the right side before the final timestep, just stay there
 # solver.add([(Implies(And([x for x in rightSide[t - 1]]), And([x for x in rightSide[t]]))) for t in range(1, len(rightSide))])
+
+# all beings must be on the right side by the end
+# solver.add(And(rightSide[-1]))
