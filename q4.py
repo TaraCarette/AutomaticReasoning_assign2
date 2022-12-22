@@ -16,11 +16,15 @@ maxBoatCrossings = 10
 # which group they cannot outnumber
 # required to be on boat (like the man guiding it)
 
-man = {"name": "man", "num": 1, "weight": 1, "cannotOutnumber": [], "required": True}
-wolf = {"name": "wolf", "num": 1, "weight": 1, "cannotOutnumber": ["goat"], "required": False}
-goat = {"name": "goat", "num": 1, "weight": 1, "cannotOutnumber": ["cabbage"], "required": False}
-cabbage = {"name": "cabbage", "num": 1, "weight": 1, "cannotOutnumber": [], "required": False}
-beingsToCross = [man, wolf, goat, cabbage]
+# man = {"name": "man", "num": 1, "weight": 1, "cannotOutnumber": [], "required": True}
+# wolf = {"name": "wolf", "num": 1, "weight": 1, "cannotOutnumber": ["goat"], "required": False}
+# goat = {"name": "goat", "num": 1, "weight": 1, "cannotOutnumber": ["cabbage"], "required": False}
+# cabbage = {"name": "cabbage", "num": 1, "weight": 1, "cannotOutnumber": [], "required": False}
+# beingsToCross = [man, wolf, goat, cabbage]
+
+smallRobot = {"name": "smallRobot", "num": 2, "weight": 1, "cannotOutnumber": [], "required": False}
+largeRobot = {"name": "largeRobot", "num": 2, "weight": 2, "cannotOutnumber": [], "required": False}
+beingsToCross = [smallRobot, largeRobot]
 
 # get the total number of beings to cross
 beingsTotal = sum([x["num"] for x in beingsToCross])
@@ -71,6 +75,8 @@ def getNameFromIndex(ind, beingsToCross):
 			break
 
 		counter += b["num"]
+
+	name = beingsToCross[-1]["name"]
 
 	return name
 
@@ -140,7 +146,6 @@ for t in range(1, len(rightSide)):
 					weight += b["weight"]
 
 		if weight > maxWeightPerBoat:
-			# pass
 			solver.add(Not(And([And(leftSide[t - 1][x], Not(leftSide[t][x])) for x in range(maxPerBoat)])))
 
 
@@ -177,7 +182,7 @@ for t in range(1, maxBoatCrossings + 1):
 
 			counter += 1
 
-	if crossCounter == len(beingsToCross):
+	if crossCounter == beingsTotal:
 		print("Crossed!")
 		break
 
