@@ -1,4 +1,4 @@
-from z3 import Bool, BoolVal, Solver, And, Sum, Or, Not, Implies, If
+from z3 import Bool, BoolVal, Solver, And, Sum, Or, Not, Implies
 import itertools
 
 # river crossing problem
@@ -8,7 +8,7 @@ maxPerBoat = 2
 minPerBoat = 1
 
 
-maxBoatCrossings = 2
+maxBoatCrossings = 10
 
 # define types based on: 
 # how many there are
@@ -71,7 +71,7 @@ solver.add(And([Sum(leftSide[t][b], rightSide[t][b]) == 1 for b in range(len(lef
 # there must be a point where everyone is on the right side
 # (as problem is symmetric, will not result in a failure if allowed to keep moving, so can ignore if takes
 # less turns than given to achieve this)
-# solver.add(Or([And(rightSide[t]) for t in range(len(rightSide))]))
+solver.add(Or([And(rightSide[t]) for t in range(len(rightSide))]))
 
 # if a being is required on the boat, it must switch sides every turn
 # get the index of every required being
@@ -108,10 +108,10 @@ for b1 in beingsToCross:
 		for b2 in b1["cannotOutnumber"]:
 			b2Index = getBeingIndexes(b2, beingsToCross)
 
-			# Sum([leftSide[t][b] for b in b1Index]) <= Sum([leftSide[t][b] for b in b2Index])
 			# if boat not there to supervise, then make sure no bad pairings
-			# solver.add([Implies(Not(boatOnLeft[t]), Sum([leftSide[t][b] for b in b1Index]) < Sum([leftSide[t][b] for b in b2Index])) for t in range(maxBoatCrossings + 1)])
-			# print([Implies(Not(boatOnLeft[t]), Sum([leftSide[t][b] for b in b1Index]) < Sum([leftSide[t][b] for b in b2Index])) for t in range(maxBoatCrossings + 1)])
+			solver.add([Implies(Not(boatOnLeft[t]), Or(Sum([leftSide[t][b] for b in b1Index]) < Sum([leftSide[t][b] for b in b2Index]), Sum([leftSide[t][b] for b in b2Index]) == 0)) for t in range(maxBoatCrossings + 1)])
+			solver.add([Implies(boatOnLeft[t], Or(Sum([rightSide[t][b] for b in b1Index]) < Sum([rightSide[t][b] for b in b2Index]), Sum([rightSide[t][b] for b in b2Index]) == 0)) for t in range(maxBoatCrossings + 1)])
+
 
 print(solver.check())
 
@@ -139,10 +139,8 @@ for t in range(1, maxBoatCrossings + 1):
 		for i in range(being["num"]):
 			if m[leftSide[t][counter]]:
 				print(being["name"] + str(i) + " LEFT")
-			elif m[rightSide[t][counter]]:
+			if m[rightSide[t][counter]]:
 				print(being["name"] + str(i) + " RIGHT")
-			else:
-				print("problem")
 
 			counter += 1
 
